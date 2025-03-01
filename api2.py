@@ -124,7 +124,6 @@ def search_page():
     except Exception as e:
         st.error(f"❌ Error: {e}")
 
-# Company details page
 def company_details_page():
     st.title("🏢 Company Details")
     
@@ -142,7 +141,6 @@ def company_details_page():
 
     # Find the company row
     company_row = companies_df[companies_df[company_name_column] == selected_company].iloc[0]
-    
     company_id = company_row[company_id_column] if company_id_column and company_id_column in company_row else "Not available"
     
     st.write(f"**📌 Company Name:** {selected_company}")
@@ -151,19 +149,20 @@ def company_details_page():
     # Fetch API data
     if company_id != "Not available":
         company_data = fetch_company_details(company_id)
-        if company_data:
-            st.write("✅ **API Response:**", company_data)  # Debugging API Response
-            
-            # Display company logo
-            logo_url = company_data.get('company_logo')
+        if company_data and "company" in company_data:
+            company_info = company_data["company"]
+
+            # Extract and display logo
+            logo_url = company_info.get("company_logo")
             if logo_url:
                 st.image(logo_url, caption=selected_company, use_column_width=True)
             else:
-                st.warning("⚠️ Company logo not found in API response.")
+                st.warning("⚠️ Company logo not found.")
 
     if st.button("🔙 Back to Search"):
         st.session_state.page = "search"
         st.rerun()
+
 
 # Main app logic
 def main():
