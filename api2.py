@@ -240,7 +240,19 @@ def company_details_page():
                 st.line_chart(profitloss_df[['year', 'net_profit']].set_index('year'))
             else:
                 st.warning("⚠️ No Profit and Loss data available.")
+            # Analysis
+            analysis_data = company_data.get("analysis") or (company_data.get("data", {}).get("analysis") if "data" in company_data else None)
+            if analysis_data:
+                analysis_df = pd.DataFrame(analysis_data)
+                analysis_df = analysis_df.drop(columns=['id', 'company_id'], errors='ignore')
 
+                st.subheader("📊 Financial Analysis")
+                st.dataframe(analysis_df.style.set_properties(**{
+                    'text-align': 'left',
+                    'white-space': 'pre-wrap'
+                }))
+            else:
+                st.warning("⚠️ No Analysis data available.")
     if st.button("🔙 Back to Search"):
         st.session_state.page = "search"
         st.rerun()
