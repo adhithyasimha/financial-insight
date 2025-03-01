@@ -23,7 +23,7 @@ def find_company_name_column(df):
     
     return df.columns[0] if df.columns else None
 
-def get_company_matches(dataframe, search_column, search_term, max_results=5):
+def get_company_matches(dataframe, search_column, search_term, max_results=10):
     """Return company names that contain the search term"""
     if not search_term:
         return []
@@ -53,29 +53,23 @@ def main():
             st.error("Could not detect a company name column in the data.")
             return
 
-        # Initialize session state for search term
-        if "search_term" not in st.session_state:
-            st.session_state.search_term = ""
+        # Search input
+        search_term = st.text_input("Search for a company:")
 
-        # Search input with real-time suggestions
-        search_term = st.text_input("Enter company name to search:", value=st.session_state.search_term)
-
-        # Fetch autocomplete suggestions
+        # Fetch matching companies
         matches = get_company_matches(companies_df, company_name_column, search_term)
 
+        # Display clickable options
         if matches:
-            selected_match = st.selectbox("Suggestions:", matches, index=0, key="dropdown")
-            if selected_match:
-                st.session_state.search_term = selected_match  # Autofill the text input with selection
-                search_term = selected_match  # Update search term with selected match
-
-        if search_term:
-            results = companies_df[companies_df[company_name_column].astype(str).str.lower().str.contains(search_term, na=False)]
-
-            if not results.empty:
-                st.dataframe(results[[company_name_column]])
-            else:
-                st.warning(f"No company matching '{search_term}' found.")
+            st.subheader("Select a company:")
+            for company in matches:
+                if st.button(company):
+                    st.session_state.selected_company = company  # Store selection in session state
+        
+        # Show details of selected company
+        if "selected_company" in st.session_state:
+            selected_company = st.session_state.selected_company
+            st.success(f"Selected Company: {selected_company}")
 
     except Exception as e:
         st.error(f"Error: {e}")
