@@ -155,9 +155,10 @@ def company_details_page():
             # Extract and display logo
             logo_url = company_info.get("company_logo")
             if logo_url:
-                st.image(logo_url, caption=selected_company, use_column_width=True)
+                st.image(logo_url, caption=selected_company, use_container_width=True)
             else:
                 st.warning("⚠️ Company logo not found.")
+
 
     if st.button("🔙 Back to Search"):
         st.session_state.page = "search"
