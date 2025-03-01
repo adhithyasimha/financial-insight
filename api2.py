@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import os
+from datetime import datetime
 
 # Constants
 EXCEL_FILE_PATH = "data/companies.xlsx"
@@ -124,9 +125,11 @@ def search_page():
     except Exception as e:
         st.error(f"❌ Error: {e}")
 
+# Company details page
 def company_details_page():
     st.title("🏢 Company Details")
     
+    # Check if a company is selected
     if "selected_company" not in st.session_state:
         st.error("⚠️ No company selected. Please go back to search.")
         if st.button("🔙 Back to Search"):
@@ -134,6 +137,7 @@ def company_details_page():
             st.rerun()
         return
 
+    # Get company info from session state
     selected_company = st.session_state.selected_company
     companies_df = st.session_state.companies_df
     company_name_column = st.session_state.company_name_column
@@ -152,19 +156,87 @@ def company_details_page():
         if company_data and "company" in company_data:
             company_info = company_data["company"]
 
-            # Extract and display logo
+            # Display company logo
             logo_url = company_info.get("company_logo")
             if logo_url:
                 st.image(logo_url, caption=selected_company, use_container_width=True)
             else:
                 st.warning("⚠️ Company logo not found.")
 
+            # Display additional company info
+            st.write(f"**ℹ️ About:** {company_info.get('about_company', 'Not available')}")
+            st.write(f"**🌐 Website:** [{company_info.get('website', 'Not available')}]({company_info.get('website', 'Not available')})")
+            st.write(f"**📊 NSE Profile:** [{company_info.get('nse_profile', 'Not available')}]({company_info.get('nse_profile', 'Not available')})")
+            st.write(f"**📈 BSE Profile:** [{company_info.get('bse_profile', 'Not available')}]({company_info.get('bse_profile', 'Not available')})")
+            st.write(f"**💰 Face Value:** {company_info.get('face_value', 'Not available')}")
+            st.write(f"**📖 Book Value:** {company_info.get('book_value', 'Not available')}")
+            st.write(f"**📈 ROCE:** {company_info.get('roce_percentage', 'Not available')}%")
+            st.write(f"**📊 ROE:** {company_info.get('roe_percentage', 'Not available')}%")
+
+            # Display cash flow data
+            if "data" in company_data and "cashflow" in company_data["data"]:
+                cashflow_data = company_data["data"]["cashflow"]
+                cashflow_df = pd.DataFrame(cashflow_data)
+                cashflow_df = cashflow_df.drop(columns=['id', 'company_id'], errors='ignore')
+                
+                # Sort by year with datetime
+                def parse_year(year_str):
+                    try:
+                        return datetime.strptime(year_str, '%b %Y')
+                    except ValueError:
+                        return None
+                cashflow_df['year_datetime'] = cashflow_df['year'].apply(parse_year)
+                cashflow_df = cashflow_df.sort_values('year_datetime')
+                cashflow_df_display = cashflow_df.drop(columns=['year_datetime'], errors='ignore')
+
+                st.subheader("💸 Yearly Cash Flow")
+                st.dataframe(cashflow_df_display.style.format({
+                    'operating_activity': '{:,.0f}',
+                    'investing_activity': '{:,.0f}',
+                    'financing_activity': '{:,.0f}',
+                    'net_cash_flow': '{:,.0f}'
+                }))
+                st.subheader("📉 Net Cash Flow Trend")
+                st.line_chart(cashflow_df[['year', 'net_cash_flow']].set_index('year'))
+
+            # Display pros and cons
+                proscons_data = company_data.get("prosandcons") or (company_data.get("data", {}).get("prosandcons") if "data" in company_data else None)
+            if proscons_data:
+                proscons_df = pd.DataFrame(proscons_data)
+                proscons_df = proscons_df.drop(columns=['id', 'company_id'], errors='ignore')
+                proscons_df['cons'] = proscons_df['cons'].replace("NULL", "Not available")
+
+                st.subheader("👍 Pros and Cons")
+                st.dataframe(proscons_df.style.set_properties(**{
+                    'text-align': 'left',
+                    'white-space': 'pre-wrap'
+                }))
+            else:
+                st.warning("⚠️ No Pros and Cons data available.")
+
+            # Display balance sheet data (check both root and 'data' levels)
+            balancesheet_data = company_data.get("balancesheet") or (company_data.get("data", {}).get("balancesheet") if "data" in company_data else None)
+            if balancesheet_data:
+                balancesheet_df = pd.DataFrame(balancesheet_data)
+                balancesheet_df = balancesheet_df.drop(columns=['id', 'company_id'], errors='ignore')
+                
+                balancesheet_df['year_datetime'] = balancesheet_df['year'].apply(parse_year)
+                balancesheet_df = balancesheet_df.sort_values('year_datetime')
+                balancesheet_df_display = balancesheet_df.drop(columns=['year_datetime'], errors='ignore')
+
+                st.subheader("📒 Balance Sheet")
+                st.dataframe(balancesheet_df_display)  # No formatting
+                
+                st.subheader("📊 Total Assets Trend")
+                # Convert total_assets to numeric for charting
+                balancesheet_df['total_assets'] = pd.to_numeric(balancesheet_df['total_assets'], errors='coerce').fillna(0)
+                st.line_chart(balancesheet_df[['year', 'total_assets']].set_index('year'))
+            else:
+                st.warning("⚠️ No Balance Sheet data available.")
 
     if st.button("🔙 Back to Search"):
         st.session_state.page = "search"
         st.rerun()
-
-
 # Main app logic
 def main():
     # Initialize page state
