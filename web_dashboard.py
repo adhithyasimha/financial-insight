@@ -3,14 +3,16 @@ import pandas as pd
 import requests
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 
+
+load_dotenv()
 # Constants
 EXCEL_FILE_PATH = "data/companies.xlsx"
 API_URL = "https://stockticker.tech/server/api/company.php?id={}&api_key={}"
-API_KEY = "ghfkffu6378382826hhdjgk"
+API_KEY = os.getenv('API')
 
 def read_excel_to_dataframe(file_path):
-    """Read the Excel file and return a DataFrame with cleaned column names."""
     try:
         df = pd.read_excel(file_path)
 
