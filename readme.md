@@ -1,4 +1,4 @@
-# Project Name
+# Financial Insight
 
 ## Required Libraries
 
